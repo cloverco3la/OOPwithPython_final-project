@@ -26,7 +26,6 @@ def train_step(vae, x, optimizer):
     return loss, recon, kl
 
 parser = ap.ArgumentParser(description="Test or train VAE model")
-parser.add_argument("--mode", type=str, default="test", choices=["test", "train"], help="Choose 'test' for running a check, or 'train' for training.")
 parser.add_argument("--dset", type=str, default="mnist_bw", choices=["mnist_bw", "mnist_color"], help="Data set to use.")
 parser.add_argument("--epochs", type=int, default=20, help="Number of training epochs.")
 parser.add_argument("--visualize_latent", action="store_true",help="Visualize latent space with t-SNE after training.")
@@ -52,17 +51,18 @@ loader.download()
 loader.load_data()
 train_dataset = loader.get_dataset()
 
-if arg.mode == "test":
-    x_np = loader.x
-    x_batch = tf.convert_to_tensor(x_np[:100])
-    x_hat, mu, log_var = vae(x_batch,training = False)
+print("__TRAINING VAE__")
 
-    print(f"Test forward shapes:\n x_hat: {x_hat.shape}, mu: {mu.shape}, log_var: {log_var.shape}")
+for epoch in range(1, arg.epochs + 1):
+    for batch in train_dataset:
+        batch = tf.convert_to_tensor(batch)
+        loss, recon, kl = train_step(vae, batch, optimizer)
 
-else:
-    for epoch in range(1, arg.epochs + 1):
-        for batch in train_dataset:
-            batch = tf.convert_to_tensor(batch)
-            loss, recon, kl = train_step(vae, batch, optimizer)
-        
-        print(f"[Epoch {epoch}] loss={loss:.4f} recon={recon:.4f} kl={kl:.4f}")
+    print(f"[Epoch {epoch}] loss={loss:.4f} recon={recon:.4f} kl={kl:.4f}")
+
+x_np = loader.x
+x_batch = tf.convert_to_tensor(x_np[:100])
+x_hat, mu, log_var = vae(x_batch, training=False)
+print(f"Test forward shapes:\n x_hat: {x_hat.shape}, mu: {mu.shape}, log_var: {log_var.shape}")
+
+
